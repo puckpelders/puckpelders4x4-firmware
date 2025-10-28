@@ -1,0 +1,50 @@
+name: Build QMK Firmware
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout your repository
+      uses: actions/checkout@v4
+      with:
+        path: custom
+    
+    - name: Checkout QMK Firmware
+      uses: actions/checkout@v4
+      with:
+        repository: qmk/qmk_firmware
+        submodules: recursive
+        path: qmk_firmware
+    
+    - name: Install QMK CLI
+      run: |
+        python3 -m pip install --upgrade pip
+        python3 -m pip install qmk
+    
+    - name: Copy keyboard files to QMK
+      run: |
+        cp -r custom/keyboards/* qmk_firmware/keyboards/
+    
+    - name: Setup QMK
+      working-directory: qmk_firmware
+      run: |
+        qmk setup -y
+    
+    - name: Compile firmware
+      working-directory: qmk_firmware
+      run: |
+        qmk compile -kb puckpelders4x4 -km default
+    
+    - name: Upload firmware
+      uses: actions/upload-artifact@v4
+      with:
+        name: puckpelders4x4-firmware
+        path: qmk_firmware/*.hex
